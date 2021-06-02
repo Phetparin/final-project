@@ -67,6 +67,14 @@ rs.reconfig(cfg)
 6. Quit from docker container
 ```
 
+### Using apps:
+```sh
+1. Open browser and get url is 127.0.0.1 on web browser
+2. Register
+3. Login
+4. Working
+5. Logout
+```
 ### Stop service:
 ```sh
 $ docker-compose down
