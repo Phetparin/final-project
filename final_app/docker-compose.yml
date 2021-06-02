@@ -1,0 +1,85 @@
+version: '3.2'
+
+services:
+
+  rabbitmq:
+    container_name: some-rabbit
+    image: rabbitmq:3-management
+    ports:
+      - 5672:5672
+      - 15672:15672
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://${HOST_IP}:15672"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx_web
+    volumes:
+      - ./nginx_conf/default.conf:/etc/nginx/conf.d/default.conf
+    ports: 
+      - 80:80
+    links: 
+      - create_user
+      - list_user
+    extra_hosts:
+      flaskapp: "${flaskapp}"
+
+  mongodb:
+    container_name: insert-mongodb
+    image: mongo
+    command: mongod --replSet my-mongo-set
+    ports:
+      - 27017:27017
+    networks: 
+      - my-mongo-cluster
+
+  mongodb2:
+    container_name: query-mongodb
+    image: mongo
+    command: mongod --replSet my-mongo-set
+    ports:
+      - 27018:27017
+    networks: 
+      - my-mongo-cluster
+
+  create_user:
+    container_name: create-user
+    build: create_user/
+    env_file: 
+      - .env
+    ports:
+      - 5000:5000
+    depends_on:
+      - rabbitmq
+    links: 
+      - rabbitmq
+
+  list_user:
+    container_name: list-user
+    build: list_user/
+    env_file: 
+      - .env
+    ports:
+      - 5001:5001
+    depends_on:
+      - mongodb2 
+    links: 
+      - mongodb2 
+
+  data_service:
+    container_name: data-service
+    build: data_service/
+    env_file: 
+      - .env
+    restart: on-failure
+    depends_on:
+      - rabbitmq
+    links: 
+      - rabbitmq
+      - mongodb 
+
+networks: 
+    my-mongo-cluster:
